@@ -12,6 +12,28 @@ class BigInt {
 	friend istream& operator>>(istream& is, BigInt& x);
 	deque<uint32_t> number;
 	static const uint32_t LIMIT = 1000000000;
+
+	pair<BigInt, uint32_t>divide(const uint32_t& b)const {
+		BigInt res;
+		uint64_t carry = 0;
+		if (b == 0) { cout << "输入错误 除或者取余0" << endl; throw "DivideByZero"; }
+		for (auto ap = this->number.begin(); ap != this->number.end(); ++ap) {
+			if (b > * ap&& carry == 0) {//有余数必然大
+				carry = *ap;
+				if(!res.number.empty())res.number.push_back(0);//商0
+				continue;
+			}
+			else
+			{
+				carry *= LIMIT;
+				carry += *ap;
+				res.number.push_back(carry / b);//直接除法计算商
+				carry %= b;//取余计算余数
+			}
+		}
+		if (res.number.empty())res = { 0 };//防止BigInt<b因为条件无法判断没写BigInt<uint32_t的运算符
+		return make_pair(res, carry);
+	}
 	pair<BigInt, BigInt> divide(const BigInt& b) const {
 		BigInt res;
 		BigInt carry;
@@ -49,33 +71,12 @@ class BigInt {
 		if (res.number.empty())res = { 0 };
 		return make_pair(res, carry);
 	}
-	pair<BigInt, uint32_t>divide(const uint32_t& b)const {
-		BigInt res;
-		uint64_t carry = 0;
-		if (b == 0) { cout << "输入错误 除或者取余0" << endl; throw "DivideByZero"; }
-		for (auto ap = this->number.begin(); ap != this->number.end(); ++ap) {
-			if (b > * ap&& carry == 0) {//有余数必然大
-				carry = *ap;
-				if(!res.number.empty())res.number.push_back(0);//商0
-				continue;
-			}
-			else
-			{
-				carry *= LIMIT;
-				carry += *ap;
-				res.number.push_back(carry / b);//直接除法计算商
-				carry %= b;//取余计算余数
-			}
-		}
-		if (res.number.empty())res = { 0 };//防止BigInt<b因为条件无法判断没写BigInt<uint32_t的运算符
-		return make_pair(res, carry);
-	}
 public:
 
 	BigInt() {}
 	BigInt(const string& s) {
 		stringstream sstr;
-		string ss; 
+		string ss;
 		ss.reserve(s.size()*2);//预留足够出空间防止反复扩容
 		size_t i = s.size();
 		while (i >= 9) {//每隔九个数字加一个空格
@@ -98,6 +99,40 @@ public:
 		number.assign(beg, end);
 	}
 	~BigInt() {}
+	BigInt operator+(const BigInt& b) const {
+		BigInt res;
+		auto ap = this->number.rbegin();
+		auto bp = b.number.rbegin();
+		uint32_t s = 0;
+		uint32_t carry = 0;
+		while (ap != this->number.rend() || bp != b.number.rend())
+		{
+			if (ap == this->number.rend()) {//左操作数已经到结尾
+				s = *bp + carry;
+				carry = s / (LIMIT);//处理溢出10^9的进位
+				res.number.push_front(s % LIMIT);//计算结果本位
+				++bp;
+			}
+			else if (bp == b.number.rend()) {//右操作数已经到结尾
+				s = *ap + carry;
+				carry = s / (LIMIT);
+				res.number.push_front(s % LIMIT);
+				++ap;
+			}
+			else {
+				s = *bp + *ap + carry;
+				carry = s / (LIMIT);
+				res.number.push_front(s % LIMIT);
+				++ap;
+				++bp;
+			}
+		}
+		if (carry)res.number.push_front(carry);//处理最后的进位
+		return res;
+	}
+	BigInt& operator+=(const BigInt& b) {
+		return *this = *this + b;
+	}
 	BigInt operator*(const uint32_t& b) const {
 		BigInt res;//最前方为最高位，最高位为0则BigInt为0
 		if (this->number.front() == 0 || b == 0)
@@ -134,40 +169,7 @@ public:
 	BigInt& operator*=(const BigInt& b) {
 		return *this = *this * b;
 	}
-	BigInt operator+(const BigInt& b) const {
-		BigInt res;
-		auto ap = this->number.rbegin();
-		auto bp = b.number.rbegin();
-		uint32_t s = 0;
-		uint32_t carry = 0;
-		while (ap != this->number.rend() || bp != b.number.rend())
-		{
-			if (ap == this->number.rend()) {//左操作数已经到结尾
-				s = *bp + carry;
-				carry = s / (LIMIT);//处理溢出10^9的进位
-				res.number.push_front(s % LIMIT);//计算结果本位
-				++bp;
-			}
-			else if (bp == b.number.rend()) {//右操作数已经到结尾
-				s = *ap + carry;
-				carry = s / (LIMIT);
-				res.number.push_front(s % LIMIT);
-				++ap;
-			}
-			else {
-				s = *bp + *ap + carry;
-				carry = s / (LIMIT);
-				res.number.push_front(s % LIMIT);
-				++ap;
-				++bp;
-			}
-		}
-		if (carry)res.number.push_front(carry);//处理最后的进位
-		return res;
-	}
-	BigInt& operator+=(const BigInt& b) {
-		return *this = *this + b;
-	}
+
 	BigInt operator-(const BigInt& b) const {//由调用者保证左边大于右边
 		BigInt res;
 		if (*this < b) { cout << "输入错误 小数减大数" << endl; throw "MinusOverFlow"; }
@@ -285,11 +287,11 @@ istream& operator>>(istream& is, BigInt& x) {
 	return is;
 }
 
-#define DEBUG
 int main()
 {
 	BigInt x, y;
-	string a(100000, '9'), b(10, '2');
-	cout << (BigInt{ a } *BigInt{b}) << endl;
+	string a(10000, '9'), b(1, '2');
+	cout << (BigInt{ a } /BigInt{b}) << endl;
+	//cout << (BigInt{ a } /2) << endl;
 
 }
