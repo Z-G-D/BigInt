@@ -1,3 +1,5 @@
+
+
 #include <iostream>
 #include <iomanip>
 #include<string>
@@ -20,7 +22,7 @@ class BigInt {
 		for (auto ap = this->number.begin(); ap != this->number.end(); ++ap) {
 			if (b > * ap&& carry == 0) {//有余数必然大
 				carry = *ap;
-				if(!res.number.empty())res.number.push_back(0);//商0
+				if (!res.number.empty())res.number.push_back(0);//商0
 				continue;
 			}
 			else
@@ -41,7 +43,8 @@ class BigInt {
 		for (auto ap = this->number.begin(); ap != this->number.end(); ++ap) {
 			carry.number.push_back(*ap);
 			if (carry < b) {
-				if(!res.number.empty())res.number.push_back(0);//商0
+				if (!res.number.empty())res.number.push_back(0);//商0
+				while (!carry.number.empty() && carry.number.front() == 0)carry.number.pop_front();
 				continue;
 			}
 			else if (b < carry) {
@@ -61,6 +64,7 @@ class BigInt {
 				}
 				res.number.push_back(m);
 				carry -= cur;
+				while (!carry.number.empty()&&carry.number.front() == 0)carry.number.pop_front();
 			}
 			else {//b=carry
 				res.number.push_back(1);
@@ -77,7 +81,7 @@ public:
 	BigInt(const string& s) {
 		stringstream sstr;
 		string ss;
-		ss.reserve(s.size()*2);//预留足够出空间防止反复扩容
+		ss.reserve(s.size() * 2);//预留足够出空间防止反复扩容
 		size_t i = s.size();
 		while (i >= 9) {//每隔九个数字加一个空格
 			i -= 9;
@@ -204,7 +208,7 @@ public:
 				++ap;
 				++bp;
 			}
-			if(s)res.number.push_front(s);
+			if (s)res.number.push_front(s);
 		}
 		return res;
 	}
@@ -287,11 +291,28 @@ istream& operator>>(istream& is, BigInt& x) {
 	return is;
 }
 
+vector<BigInt> a;
+vector<BigInt> u = { {"314882150829468584"} ,//2^3*3947*1455859*6849701
+						{"427197303358170108"} ,//2^2*3*157*373*607909278869
+						{"1022292690726729920" },//2^6*5*1109*366901*7851359
+						{"1698479428772363217" },//3*227*1171*2129885634067
+						{"2006101093849356424" }//2^3*6115411*41005034123
+};
+#define DEBUG
 int main()
 {
-	BigInt x, y;
-	string a(10000, '9'), b(1, '2');
-	cout << (BigInt{ a } /BigInt{b}) << endl;
-	//cout << (BigInt{ a } /2) << endl;
 
+#ifdef DEBUG
+	fstream cin("input.txt");
+#endif // DEBUG
+	BigInt a("100000000000000000"), b ("1");
+	unsigned long long LL= 0;
+	for (int i = 70; i > 0; i--) {
+		cout << "REAL:" << b << endl;
+		cout << "BI  :" << b % BigInt("18446744073709551616") << endl;//64位int极限;
+		cout << "LL  :" << LL << endl;
+		LL <<= 1;
+		b *= 2;
+	}
+	cout << (BigInt("1111111111111111111111111111111111111111")^64) << endl;
 }
